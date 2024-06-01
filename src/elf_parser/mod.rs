@@ -13,53 +13,78 @@ pub const SECTION_NAME_LENGTH_MAXIMUM: usize = 16;
 const SYMBOL_NAME_LENGTH_MAXIMUM: usize = 64;
 
 /// Error definitions
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ElfParserError {
     /// ELF file header is inconsistent or unsupported
-    #[error("invalid file header")]
     InvalidFileHeader,
     /// Program header is inconsistent or unsupported
-    #[error("invalid program header")]
     InvalidProgramHeader,
     /// Section header is inconsistent or unsupported
-    #[error("invalid section header")]
     InvalidSectionHeader,
     /// Section or symbol name is not UTF8 or too long
-    #[error("invalid string")]
     InvalidString,
     /// Section or symbol name is too long
-    #[error("Section or symbol name `{0}` is longer than `{1}` bytes")]
     StringTooLong(String, usize),
     /// An index or memory range does exeed its boundaries
-    #[error("value out of bounds")]
     OutOfBounds,
     /// The size isn't valid
-    #[error("invalid size")]
     InvalidSize,
     /// Headers, tables or sections do overlap in the file
-    #[error("values overlap")]
     Overlap,
     /// Sections are not sorted in ascending order
-    #[error("sections not in ascending order")]
     SectionNotInOrder,
     /// No section name string table present in the file
-    #[error("no section name string table found")]
     NoSectionNameStringTable,
     /// Invalid .dynamic section table
-    #[error("invalid dynamic section table")]
     InvalidDynamicSectionTable,
     /// Invalid relocation table
-    #[error("invalid relocation table")]
     InvalidRelocationTable,
     /// Invalid alignment
-    #[error("invalid alignment")]
     InvalidAlignment,
     /// No string table
-    #[error("no string table")]
     NoStringTable,
     /// No dynamic string table
-    #[error("no dynamic string table")]
     NoDynamicStringTable,
+}
+
+impl std::error::Error for ElfParserError {}
+
+impl std::fmt::Display for ElfParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ElfParserError::InvalidFileHeader => write!(f, "invalid file header"),
+            ElfParserError::InvalidProgramHeader => {
+                write!(f, "invalid program header")
+            }
+            ElfParserError::InvalidSectionHeader => {
+                write!(f, "invalid section header")
+            }
+            ElfParserError::InvalidString => write!(f, "invalid string"),
+            ElfParserError::StringTooLong(s, n) => {
+                write!(f, "Section or symbol name `{s}` is longer than `{n}` bytes",)
+            }
+            ElfParserError::OutOfBounds => write!(f, "value out of bounds"),
+            ElfParserError::InvalidSize => write!(f, "invalid size"),
+            ElfParserError::Overlap => write!(f, "values overlap"),
+            ElfParserError::SectionNotInOrder => {
+                write!(f, "sections not in ascending order")
+            }
+            ElfParserError::NoSectionNameStringTable => {
+                write!(f, "no section name string table found")
+            }
+            ElfParserError::InvalidDynamicSectionTable => {
+                write!(f, "invalid dynamic section table")
+            }
+            ElfParserError::InvalidRelocationTable => {
+                write!(f, "invalid relocation table")
+            }
+            ElfParserError::InvalidAlignment => write!(f, "invalid alignment"),
+            ElfParserError::NoStringTable => write!(f, "no string table"),
+            ElfParserError::NoDynamicStringTable => {
+                write!(f, "no dynamic string table")
+            }
+        }
+    }
 }
 
 fn check_that_there_is_no_overlap(

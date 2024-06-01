@@ -29,7 +29,6 @@ log = "0.4.2"
 rand = { version = "0.8.5", features = ["small_rng"]}
 rustc-demangle = "0.1"
 scroll = "0.11"
-thiserror = "1.0.26"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["memoryapi", "sysinfoapi", "winnt", "errhandlingapi"], optional = true }
@@ -47,3 +46,4 @@ debugger = ["gdbstub"]
 elf = "0.0.10"
 json = "0.12"
 test_utils = { path = "test_utils/" }
+thiserror = "1.0.26"

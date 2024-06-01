@@ -12,69 +12,154 @@ use {
 };
 
 /// Error definitions
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 #[repr(u64)] // discriminant size, used in emit_exception_kind in JIT
 pub enum EbpfError {
     /// ELF error
-    #[error("ELF error: {0}")]
-    ElfError(#[from] ElfError),
+    ElfError(ElfError),
     /// Function was already registered
-    #[error("function #{0} was already registered")]
     FunctionAlreadyRegistered(usize),
     /// Exceeded max BPF to BPF call depth
-    #[error("exceeded max BPF to BPF call depth")]
     CallDepthExceeded,
     /// Attempt to exit from root call frame
-    #[error("attempted to exit root call frame")]
     ExitRootCallFrame,
     /// Divide by zero"
-    #[error("divide by zero at BPF instruction")]
     DivideByZero,
     /// Divide overflow
-    #[error("division overflow at BPF instruction")]
     DivideOverflow,
     /// Exceeded max instructions allowed
-    #[error("attempted to execute past the end of the text segment at BPF instruction")]
     ExecutionOverrun,
     /// Attempt to call to an address outside the text segment
-    #[error("callx attempted to call outside of the text segment")]
     CallOutsideTextSegment,
     /// Exceeded max instructions allowed
-    #[error("exceeded CUs meter at BPF instruction")]
     ExceededMaxInstructions,
     /// Program has not been JIT-compiled
-    #[error("program has not been JIT-compiled")]
     JitNotCompiled,
     /// Invalid virtual address
-    #[error("invalid virtual address {0:x?}")]
     InvalidVirtualAddress(u64),
     /// Memory region index or virtual address space is invalid
-    #[error("Invalid memory region at index {0}")]
     InvalidMemoryRegion(usize),
     /// Access violation (general)
-    #[error("Access violation in {3} section at address {1:#x} of size {2:?}")]
     AccessViolation(AccessType, u64, u64, &'static str),
     /// Access violation (stack specific)
-    #[error("Access violation in stack frame {3} at address {1:#x} of size {2:?}")]
     StackAccessViolation(AccessType, u64, u64, i64),
     /// Invalid instruction
-    #[error("invalid BPF instruction")]
     InvalidInstruction,
     /// Unsupported instruction
-    #[error("unsupported BPF instruction")]
     UnsupportedInstruction,
     /// Compilation is too big to fit
-    #[error("Compilation exhausted text segment at BPF instruction {0}")]
     ExhaustedTextSegment(usize),
     /// Libc function call returned an error
-    #[error("Libc calling {0} {1:?} returned error code {2}")]
     LibcInvocationFailed(&'static str, Vec<String>, i32),
     /// Verifier error
-    #[error("Verifier error: {0}")]
-    VerifierError(#[from] VerifierError),
+    VerifierError(VerifierError),
     /// Syscall error
-    #[error("Syscall error: {0}")]
     SyscallError(Box<dyn Error>),
+}
+
+#[allow(unused_qualifications)]
+impl std::error::Error for EbpfError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        use EbpfError::{
+            AccessViolation, CallDepthExceeded, CallOutsideTextSegment, DivideByZero,
+            DivideOverflow, ElfError, ExceededMaxInstructions, ExecutionOverrun,
+            ExhaustedTextSegment, ExitRootCallFrame, FunctionAlreadyRegistered, InvalidInstruction,
+            InvalidMemoryRegion, InvalidVirtualAddress, JitNotCompiled, LibcInvocationFailed,
+            StackAccessViolation, SyscallError, UnsupportedInstruction, VerifierError,
+        };
+        match self {
+            ElfError(source) => Some(source),
+            CallDepthExceeded
+            | ExitRootCallFrame
+            | FunctionAlreadyRegistered(_)
+            | InvalidVirtualAddress(_)
+            | InvalidMemoryRegion(_)
+            | AccessViolation(..)
+            | DivideByZero
+            | DivideOverflow
+            | ExecutionOverrun
+            | CallOutsideTextSegment
+            | ExceededMaxInstructions
+            | JitNotCompiled
+            | InvalidInstruction
+            | StackAccessViolation(..)
+            | ExhaustedTextSegment(_)
+            | LibcInvocationFailed(..)
+            | SyscallError(_)
+            | UnsupportedInstruction => None,
+            VerifierError(source) => Some(source),
+        }
+    }
+}
+#[allow(unused_qualifications)]
+impl std::fmt::Display for EbpfError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use EbpfError::{
+            AccessViolation, CallDepthExceeded, CallOutsideTextSegment, DivideByZero,
+            DivideOverflow, ElfError, ExceededMaxInstructions, ExecutionOverrun,
+            ExhaustedTextSegment, ExitRootCallFrame, FunctionAlreadyRegistered, InvalidInstruction,
+            InvalidMemoryRegion, InvalidVirtualAddress, JitNotCompiled, LibcInvocationFailed,
+            StackAccessViolation, SyscallError, UnsupportedInstruction, VerifierError,
+        };
+        match self {
+            ElfError(e) => write!(f, "ELF error: {e}"),
+            FunctionAlreadyRegistered(x) => {
+                write!(f, "function #{x} was already registered")
+            }
+            CallDepthExceeded => write!(f, "exceeded max BPF to BPF call depth"),
+            ExitRootCallFrame => write!(f, "attempted to exit root call frame"),
+            DivideByZero => write!(f, "divide by zero at BPF instruction"),
+            DivideOverflow => write!(f, "division overflow at BPF instruction"),
+            ExecutionOverrun => write!(
+                f,
+                "attempted to execute past the end of the text segment at BPF instruction"
+            ),
+            CallOutsideTextSegment => {
+                write!(f, "callx attempted to call outside of the text segment")
+            }
+            ExceededMaxInstructions => {
+                write!(f, "exceeded CUs meter at BPF instruction")
+            }
+            JitNotCompiled => write!(f, "program has not been JIT-compiled"),
+            InvalidVirtualAddress(address) => {
+                write!(f, "invalid virtual address {address:x?}")
+            }
+            InvalidMemoryRegion(idx) => {
+                write!(f, "Invalid memory region at index {idx}")
+            }
+            AccessViolation(_0, address, size, section) => write!(
+                f,
+                "Access violation in {section} section at address {address:#x} of size {size:?}"
+            ),
+            StackAccessViolation(_0, address, size, frame) => write!(
+                f,
+                "Access violation in stack frame {frame} at address {address:#x} of size {size:?}"
+            ),
+            InvalidInstruction => write!(f, "invalid BPF instruction"),
+            UnsupportedInstruction => write!(f, "unsupported BPF instruction"),
+            ExhaustedTextSegment(ix) => write!(
+                f,
+                "Compilation exhausted text segment at BPF instruction {ix}"
+            ),
+            LibcInvocationFailed(a, b, code) => {
+                write!(f, "Libc calling {a} {b:?} returned error code {code}")
+            }
+            VerifierError(e) => write!(f, "Verifier error: {e}"),
+            SyscallError(e) => write!(f, "Syscall error: {e}"),
+        }
+    }
+}
+impl From<ElfError> for EbpfError {
+    #[allow(deprecated)]
+    fn from(source: ElfError) -> Self {
+        EbpfError::ElfError { 0: source }
+    }
+}
+impl From<VerifierError> for EbpfError {
+    #[allow(deprecated)]
+    fn from(source: VerifierError) -> Self {
+        EbpfError::VerifierError { 0: source }
+    }
 }
 
 /// Same as `Result` but provides a stable memory layout

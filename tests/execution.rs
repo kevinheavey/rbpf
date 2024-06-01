@@ -10,7 +10,6 @@ extern crate byteorder;
 extern crate libc;
 extern crate solana_rbpf;
 extern crate test_utils;
-extern crate thiserror;
 
 use byteorder::{ByteOrder, LittleEndian};
 #[cfg(all(not(windows), target_arch = "x86_64"))]
